@@ -1,2 +1,8 @@
+
 # MCnebulaMet
-Extends the MCnebula framework to support advanced metabolomics analysis workflows. 
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+The goal of MCnebulaMet is to ...
+
