@@ -1,0 +1,103 @@
+---
+title: "MCnebula2 workflow for LC-MS/MS dataset analysis"
+bibliography: '`r system.file("extdata", "library.bib", package = "MCnebulaMet")`'
+csl: '`r system.file("extdata", "vancouver.csl", package = "MCnebulaMet")`'
+reference-section-title: "Reference"
+link-citations: true
+params:
+  intensity_df: NULL
+  sample_info: NULL
+output:
+  bookdown::pdf_document2:
+    keep_tex: true
+    toc: true
+    toc_depth: 3
+    latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+```{r}
+intensity_df <- params$intensity_df
+sample_info <- params$sample_info
+```
+
+# Sample infomation and outlier detection
+
+```{r}
+kableExtra::kable(
+  as.data.frame(sample_info), format = "latex",
+  booktabs = TRUE, caption = "example"
+) |>
+  kableExtra::kable_styling(latex_options = c("hold_position"))
+```
+
+# Missing value
+
+```{r}
+detect_mv(intensity_df, sample_info)
+intensity_df_imputed <- impute_mv(intensity_df, method = "knn")
+```
+
+# RSD
+
+```{r}
+rsd_res <- compute_rsd(intensity_df)
+draw_rsd_scat(rsd_res$rsd_df)
+draw_rsd_cumu(rsd_res$cum_df)
+if(any(rsd_res$violin_df$type == "QC")){
+  draw_rsd_violin(rsd_res$violin_df)
+}
+```
+
+# intensity
+
+```{r}
+intensity_df_longer <- tidyr::pivot_longer(
+  intensity_df, cols = dplyr::everything(),
+  names_to = "sample", values_to = "intensity"
+)
+intensity_box_df <- dplyr::left_join(intensity_df_longer, sample_info, by = "sample")
+draw_intentity(intensity_box_df)
+```
+
+# correlation
+
+```{r}
+corr <- round(cor(intensity_df), 1)
+ggcorrplot::ggcorrplot(corr, colors = c("#6D9EC1", "white", "#E46726"), lab = TRUE)
+```
+
+# PCA
+
+```{r}
+intensity_scaled_df <- scale(
+  log10(intensity_df + 1), center = TRUE, scale = TRUE
+)
+quant_t <- t(intensity_scaled_df)
+res_pca <- FactoMineR::PCA(quant_t, graph = FALSE)
+
+factoextra::fviz_pca_ind(res_pca,
+             geom.ind = c("point", "text"),
+             repel = TRUE,
+             fill.ind = sample_info$group,
+             col.ind = "black",
+             pointshape = 21, pointsize = 1.5,
+             palette = "jco",
+             ellipse.level = 0.7,
+             ellipse.alpha = 0.25,
+             addEllipses = TRUE,
+             ggtheme = theme_gray(),
+             legend.title = "Groups",
+             title = "UUO serum ESI-",
+             legend="right",
+             font.legend = 9)
+```
+
+
