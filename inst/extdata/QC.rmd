@@ -5,8 +5,11 @@ csl: '`r system.file("extdata", "vancouver.csl", package = "MCnebulaMet")`'
 reference-section-title: "Reference"
 link-citations: true
 params:
-  intensity_df: NULL
+  quant: NULL
   sample_info: NULL
+header-includes:
+  - \usepackage[table]{xcolor}
+  - \usepackage{float}
 output:
   bookdown::pdf_document2:
     keep_tex: true
@@ -24,31 +27,43 @@ knitr::opts_chunk$set(
 ```
 
 ```{r}
-intensity_df <- params$intensity_df
+quant <- params$quant
 sample_info <- params$sample_info
 ```
 
-# Sample infomation and outlier detection
+\newpage
+
+# Sample infomation
 
 ```{r}
+#kableExtra::kable(
+#  as.data.frame(sample_info), format = "latex",
+#  booktabs = TRUE, caption = "example"
+#) |>
+#  kableExtra::kable_styling(latex_options = c("hold_position"))
 kableExtra::kable(
-  as.data.frame(sample_info), format = "latex",
-  booktabs = TRUE, caption = "example"
+  as.data.frame(sample_info),
+  format = "latex",
+  booktabs = TRUE,
+  caption = "Sample information"
 ) |>
-  kableExtra::kable_styling(latex_options = c("hold_position"))
+  kableExtra::kable_styling(
+    latex_options = c("HOLD_position", "striped"),
+    full_width = FALSE
+  )
 ```
 
 # Missing value
 
 ```{r}
-detect_mv(intensity_df, sample_info)
-intensity_df_imputed <- impute_mv(intensity_df, method = "knn")
+df_mv <- detect_mv(quant, sample_info)
+draw_mv(df_mv)
 ```
 
 # RSD
 
-```{r}
-rsd_res <- compute_rsd(intensity_df)
+```{r RSD}
+rsd_res <- compute_rsd(quant)
 draw_rsd_scat(rsd_res$rsd_df)
 draw_rsd_cumu(rsd_res$cum_df)
 if(any(rsd_res$violin_df$type == "QC")){
@@ -58,9 +73,9 @@ if(any(rsd_res$violin_df$type == "QC")){
 
 # intensity
 
-```{r}
+```{r intensity}
 intensity_df_longer <- tidyr::pivot_longer(
-  intensity_df, cols = dplyr::everything(),
+  quant, cols = dplyr::everything(),
   names_to = "sample", values_to = "intensity"
 )
 intensity_box_df <- dplyr::left_join(intensity_df_longer, sample_info, by = "sample")
@@ -69,35 +84,14 @@ draw_intentity(intensity_box_df)
 
 # correlation
 
-```{r}
-corr <- round(cor(intensity_df), 1)
-ggcorrplot::ggcorrplot(corr, colors = c("#6D9EC1", "white", "#E46726"), lab = TRUE)
+```{r correlation}
+#corr <- round(cor(quant), 1)
+#ggcorrplot::ggcorrplot(corr, colors = c("#6D9EC1", "white", "#E46726"), lab = TRUE)
+draw_corr(quant, sample_info)
 ```
 
 # PCA
 
-```{r}
-intensity_scaled_df <- scale(
-  log10(intensity_df + 1), center = TRUE, scale = TRUE
-)
-quant_t <- t(intensity_scaled_df)
-res_pca <- FactoMineR::PCA(quant_t, graph = FALSE)
-
-factoextra::fviz_pca_ind(res_pca,
-             geom.ind = c("point", "text"),
-             repel = TRUE,
-             fill.ind = sample_info$group,
-             col.ind = "black",
-             pointshape = 21, pointsize = 1.5,
-             palette = "jco",
-             ellipse.level = 0.7,
-             ellipse.alpha = 0.25,
-             addEllipses = TRUE,
-             ggtheme = theme_gray(),
-             legend.title = "Groups",
-             title = "UUO serum ESI-",
-             legend="right",
-             font.legend = 9)
+```{r PCA}
+draw_pca(quant, sample_info)
 ```
-
-
