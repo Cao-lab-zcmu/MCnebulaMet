@@ -36,11 +36,6 @@ sample_info <- params$sample_info
 # Sample infomation
 
 ```{r}
-#kableExtra::kable(
-#  as.data.frame(sample_info), format = "latex",
-#  booktabs = TRUE, caption = "example"
-#) |>
-#  kableExtra::kable_styling(latex_options = c("hold_position"))
 kableExtra::kable(
   as.data.frame(sample_info),
   format = "latex",
@@ -85,13 +80,11 @@ draw_intentity(intensity_box_df)
 # correlation
 
 ```{r correlation}
-#corr <- round(cor(quant), 1)
-#ggcorrplot::ggcorrplot(corr, colors = c("#6D9EC1", "white", "#E46726"), lab = TRUE)
 draw_corr(quant, sample_info)
 ```
 
 # PCA
 
 ```{r PCA}
-draw_pca(quant, sample_info)
+draw_pca(quant, sample_info, label = TRUE)
 ```

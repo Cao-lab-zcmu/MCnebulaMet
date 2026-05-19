@@ -328,7 +328,7 @@ draw_corr <- function(quant, sample_info) {
     ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1, size = 7), axis.text.y = ggplot2::element_text(size = 7), legend.position = "right", legend.title = ggplot2::element_text(size = 9), legend.text = ggplot2::element_text(size = 8), panel.grid = ggplot2::element_blank(), plot.margin = ggplot2::margin(8, 8, 8, 8))
 }
 
-draw_pca <- function(quant, sample_info) {
+draw_pca <- function(quant, sample_info, label = FALSE) {
   intensity_scaled_df <- scale(log2(quant + 1), center = TRUE, scale = TRUE)
   quant_t <- t(intensity_scaled_df)
   res_pca <- FactoMineR::PCA(quant_t, graph = FALSE)
@@ -337,7 +337,7 @@ draw_pca <- function(quant, sample_info) {
   pca_df$sample <- rownames(pca_df)
   var_explained <- res_pca$eig[,2]
   pca_df$group <- factor(pca_df$group, levels = unique(sample_info$group))
-  ggplot2::ggplot(pca_df, ggplot2::aes(Dim.1, Dim.2)) +
+  p <- ggplot2::ggplot(pca_df, ggplot2::aes(Dim.1, Dim.2)) +
     ggplot2::stat_ellipse(ggplot2::aes(color = group), level = 0.7, linewidth = 0.6, alpha = 0.6) +
     ggplot2::geom_point(ggplot2::aes(color = group), size = 2.6, alpha = 0.9) +
     ggplot2::geom_hline(yintercept = 0, linewidth = 0.4, colour = "black") +
@@ -346,5 +346,16 @@ draw_pca <- function(quant, sample_info) {
     ggplot2::labs(x = paste0("PC1 (", round(var_explained[1],1), "%)"), y = paste0("PC2 (", round(var_explained[2],1), "%)"), color = NULL) +
     ggplot2::scale_color_manual(values = c("#4C78A8","#E45756","#54A24B")) +
     ggplot2::theme_classic(base_size = 12) +
-    ggplot2::theme(axis.title = ggplot2::element_text(size = 11), axis.text = ggplot2::element_text(size = 9), legend.position = "right", legend.text = ggplot2::element_text(size = 10), panel.grid = ggplot2::element_blank(), plot.margin = ggplot2::margin(8,12,8,8))
+    ggplot2::theme(
+      axis.title = ggplot2::element_text(size = 11),
+      axis.text = ggplot2::element_text(size = 9),
+      legend.position = "right",
+      legend.text = ggplot2::element_text(size = 10),
+      panel.grid = ggplot2::element_blank(),
+      plot.margin = ggplot2::margin(8,12,8,8)
+    )
+  if (label) {
+    p <- p + ggrepel::geom_text_repel(ggplot2::aes(label = sample), size = 3, max.overlaps = Inf)
+  }
+  p
 }
