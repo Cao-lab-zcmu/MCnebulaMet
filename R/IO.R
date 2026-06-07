@@ -706,3 +706,151 @@ create_ST2 <- function(annotation_table, Level1, Level2, Level3,
   
   openxlsx::saveWorkbook(wb, file_name, overwrite = TRUE)
 }
+
+export_annotation_table <- function(
+    annotation_table,
+    file = "annotation_table.xlsx"
+) {
+
+    wb <- openxlsx::createWorkbook()
+    sheet_name <- "Annotation_Table"
+
+    openxlsx::addWorksheet(wb, sheet_name)
+
+    intro_text <- "This table summarizes all annotated metabolites with confidence levels (Level 1–3)."
+
+    intro_style <- openxlsx::createStyle(
+        fontSize = 14,
+        textDecoration = "Bold"
+    )
+
+    openxlsx::writeData(
+        wb,
+        sheet_name,
+        intro_text,
+        startRow = 1,
+        startCol = 1
+    )
+
+    openxlsx::addStyle(
+        wb,
+        sheet_name,
+        intro_style,
+        rows = 1,
+        cols = 1
+    )
+
+    header_style <- openxlsx::createStyle(
+        fontSize = 12,
+        fontColour = "white",
+        halign = "center",
+        fgFill = "#4F81BD",
+        textDecoration = "Bold",
+        border = "TopBottomLeftRight"
+    )
+
+    openxlsx::writeData(
+        wb,
+        sheet_name,
+        annotation_table,
+        startRow = 2,
+        headerStyle = header_style
+    )
+
+    openxlsx::setColWidths(
+        wb,
+        sheet_name,
+        cols = 1:ncol(annotation_table),
+        widths = "auto"
+    )
+
+    openxlsx::freezePane(
+        wb,
+        sheet_name,
+        firstActiveRow = 3
+    )
+
+    openxlsx::addFilter(
+        wb,
+        sheet_name,
+        row = 2,
+        cols = 1:ncol(annotation_table)
+    )
+
+    border_style <- openxlsx::createStyle(
+        border = "TopBottomLeftRight"
+    )
+
+    openxlsx::addStyle(
+        wb,
+        sheet_name,
+        style = border_style,
+        rows = 2:(nrow(annotation_table) + 2),
+        cols = 1:ncol(annotation_table),
+        gridExpand = TRUE,
+        stack = TRUE
+    )
+
+    level1_style <- openxlsx::createStyle(
+        fgFill = "#DFF0D8",
+        fontColour = "#006100"
+    )
+
+    level2_style <- openxlsx::createStyle(
+        fgFill = "#D9EDF7",
+        fontColour = "#1F4E79"
+    )
+
+    level3_style <- openxlsx::createStyle(
+        fgFill = "#F2F2F2",
+        fontColour = "#595959"
+    )
+
+    col_idx <- which(colnames(annotation_table) == "Annotation_Level")
+
+    rows_l1 <- which(annotation_table$Annotation_Level == "Level 1") + 2
+    rows_l2 <- which(annotation_table$Annotation_Level == "Level 2") + 2
+    rows_l3 <- which(annotation_table$Annotation_Level == "Level 3") + 2
+
+    if (length(rows_l1) > 0) {
+        openxlsx::addStyle(
+            wb,
+            sheet_name,
+            level1_style,
+            rows = rows_l1,
+            cols = col_idx,
+            gridExpand = TRUE,
+            stack = TRUE
+        )
+    }
+
+    if (length(rows_l2) > 0) {
+        openxlsx::addStyle(
+            wb,
+            sheet_name,
+            level2_style,
+            rows = rows_l2,
+            cols = col_idx,
+            gridExpand = TRUE,
+            stack = TRUE
+        )
+    }
+
+    if (length(rows_l3) > 0) {
+        openxlsx::addStyle(
+            wb,
+            sheet_name,
+            level3_style,
+            rows = rows_l3,
+            cols = col_idx,
+            gridExpand = TRUE,
+            stack = TRUE
+        )
+    }
+
+    openxlsx::saveWorkbook(
+        wb,
+        file,
+        overwrite = TRUE
+    )
+}
