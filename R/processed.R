@@ -455,38 +455,136 @@ get_mirror_data_std <- function(i, anno, sample, lib){
   )
 }
 
+#plot_mirror_std <- function(i, anno, sample, lib){
+#
+#  dat <- get_mirror_data_std(i, anno, sample, lib)
+#
+#  if(is.null(dat)) return(NULL)
+#
+#  spec_sample <- dat$sample
+#  spec_lib <- dat$library
+#  meta <- dat$meta
+#
+#  ggplot2::ggplot() +
+#
+#    ggplot2::geom_segment(
+#      data = spec_sample,
+#      ggplot2::aes(x=mz,xend=mz,y=0,yend=rel.int.),
+#      linewidth=0.3,
+#      colour="#1f78b4"
+#    ) +
+#
+#    ggplot2::geom_segment(
+#      data = spec_lib,
+#      ggplot2::aes(x=mz,xend=mz,y=0,yend=-rel_intensity),
+#      linewidth=0.3,
+#      colour="#e31a1c"
+#    ) +
+#
+#    ggplot2::theme_classic(base_size = 11) +
+#
+#    ggplot2::labs(
+#      title = meta$synonym,
+#      subtitle = paste0(meta$ID," Cosine=",round(meta$cosine,3)),
+#      x = "m/z",
+#      y = "Intensity"
+#    )
+#}
+
 plot_mirror_std <- function(i, anno, sample, lib){
 
   dat <- get_mirror_data_std(i, anno, sample, lib)
-
   if(is.null(dat)) return(NULL)
-
   spec_sample <- dat$sample
   spec_lib <- dat$library
   meta <- dat$meta
-
+  xmax <- max(c(spec_sample$mz, spec_lib$mz), na.rm = TRUE)
   ggplot2::ggplot() +
-
+    ## Sample spectrum
     ggplot2::geom_segment(
       data = spec_sample,
-      ggplot2::aes(x=mz,xend=mz,y=0,yend=rel.int.),
-      linewidth=0.3,
-      colour="#1f78b4"
+      ggplot2::aes(
+        x = mz,
+        xend = mz,
+        y = 0,
+        yend = rel.int.
+      ),
+      linewidth = 0.9,
+      colour = "#1B4F72"
     ) +
-
+    ## Standard spectrum
     ggplot2::geom_segment(
       data = spec_lib,
-      ggplot2::aes(x=mz,xend=mz,y=0,yend=-rel_intensity),
-      linewidth=0.3,
-      colour="#e31a1c"
+      ggplot2::aes(
+        x = mz,
+        xend = mz,
+        y = 0,
+        yend = -rel_intensity
+      ),
+      linewidth = 0.9,
+      colour = "#7B241C"
     ) +
-
-    ggplot2::theme_classic(base_size = 11) +
-
+    ggplot2::geom_hline(
+      yintercept = 0,
+      linewidth = 0.8,
+      colour = "black"
+    ) +
+    ggplot2::annotate(
+      "text",
+      x = 0,
+      y = 105,
+      hjust = 0,
+      size = 6,
+      fontface = "bold",
+      label = paste0(
+        meta$synonym,
+        "\nID: ",
+        meta$ID
+      )
+    ) +
+    ggplot2::annotate(
+      "text",
+      x = 0,
+      y = -105,
+      hjust = 0,
+      size = 6,
+      fontface = "bold",
+      label = paste0(
+        "Cosine = ",
+        round(meta$cosine, 3)
+      )
+    ) +
+    ggplot2::annotate(
+      "text",
+      x = xmax,
+      y = 105,
+      hjust = 1,
+      size = 6,
+      fontface = "bold",
+      colour = "#2C3E50",
+      label = "Sample"
+    ) +
+    ggplot2::annotate(
+      "text",
+      x = xmax,
+      y = -105,
+      hjust = 1,
+      size = 6,
+      fontface = "bold",
+      colour = "#8B1E3F",
+      label = "Standard"
+    ) +
+    ggplot2::scale_y_continuous(
+      limits = c(-110, 110)
+    ) +
     ggplot2::labs(
-      title = meta$synonym,
-      subtitle = paste0(meta$ID," Cosine=",round(meta$cosine,3)),
       x = "m/z",
-      y = "Intensity"
+      y = "Relative Intensity (%)"
+    ) +
+    ggplot2::theme_classic(base_size = 18) +
+    ggplot2::theme(
+      axis.title = ggplot2::element_text(size = 16, face = "bold"),
+      axis.text = ggplot2::element_text(size = 16),
+      plot.margin = ggplot2::margin(10, 10, 10, 10)
     )
 }
