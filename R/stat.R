@@ -161,16 +161,14 @@ plot_heatmap <- function(mat,
                          show_rownames = FALSE,
                          show_colnames = FALSE) {
 
-  # 行标准化（热图常规操作）
   if (scale_rows) {
     mat <- t(scale(t(mat)))
   }
 
-  # 颜色：和你 volcano 的低饱和风格一致
   heat_colors <- colorRampPalette(c(
-    "#4C6A92",  # down (蓝)
-    "#F5F5F5",  # 中性灰
-    "#C77C6B"   # up (红)
+    "#4C6A92",
+    "#F5F5F5",
+    "#C77C6B"
   ))(100)
 
   pheatmap::pheatmap(
