@@ -17,6 +17,12 @@ QC_report <- function(
     package = "MCnebulaMet"
   )
 
+  has_qc <- any(grepl(
+    "QC",
+    sample_info$group,
+    ignore.case = TRUE
+  ))
+
   if (rmd_path == "") {
     stop("Cannot find QC.rmd in package")
   }
@@ -29,7 +35,8 @@ QC_report <- function(
     output_dir = out_dir,
     params = list(
       quant = quant,
-      sample_info = sample_info
+      sample_info = sample_info,
+      has_qc = has_qc
     ),
     envir = new.env(parent = globalenv())
   )

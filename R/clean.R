@@ -157,9 +157,10 @@ draw_mv <- function(df_mv) {
       alpha = 0.9
     ) +
     scale_fill_manual(values = c(
-      "#4C78A8",  # blue
-      "#E45756",  # red
-      "#54A24B"   # green
+      "#4C78A8",
+      "#E45756",
+      "#54A24B",
+      "#F2CF5B"
     )) +
     coord_cartesian(ylim = c(0, 100)) +
     labs(

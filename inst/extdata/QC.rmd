@@ -7,6 +7,7 @@ link-citations: true
 params:
   quant: NULL
   sample_info: NULL
+  has_qc: false
 header-includes:
   - \usepackage[table]{xcolor}
   - \usepackage{float}
@@ -58,11 +59,15 @@ draw_mv(df_mv)
 # RSD
 
 ```{r RSD}
-rsd_res <- compute_rsd(quant)
-draw_rsd_scat(rsd_res$rsd_df)
-draw_rsd_cumu(rsd_res$cum_df)
-if(any(rsd_res$violin_df$type == "QC")){
-  draw_rsd_violin(rsd_res$violin_df)
+if(params$has_qc){
+  rsd_res <- compute_rsd(params$quant)
+  draw_rsd_scat(rsd_res$rsd_df)
+  draw_rsd_cumu(rsd_res$cum_df)
+  if(any(rsd_res$violin_df$type == "QC")){
+    draw_rsd_violin(rsd_res$violin_df)
+  }
+} else {
+  cat("No QC samples detected. RSD analysis skipped.")
 }
 ```
 

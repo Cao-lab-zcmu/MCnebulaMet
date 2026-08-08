@@ -147,31 +147,23 @@ draw_rsd_cumu <- function(cum_df) {
 }
 
 draw_rsd_violin <- function(violin_df) {
-
   has_qc <- any(violin_df$type == "QC")
   if (!has_qc) {
     message("No QC samples found, plotting only Sample")
   }
-
   n_qc <- sum(violin_df$type == "QC")
   n_sample <- sum(violin_df$type == "Sample")
-
   label_list <- c(
     QC = paste0("QC (n = ", n_qc, ")"),
     Sample = paste0("Sample (n = ", n_sample, ")")
   )
-
   ggplot(violin_df, aes(x = type, y = value)) +
-
-    # violin（更干净）
     geom_violin(
       aes(fill = type),
       trim = FALSE,
       alpha = 0.8,
       color = NA
     ) +
-
-    # boxplot（细一点，更精致）
     geom_boxplot(
       width = 0.10,
       outlier.size = 0.5,
@@ -179,16 +171,12 @@ draw_rsd_violin <- function(violin_df) {
       color = "black",
       linewidth = 0.4
     ) +
-
-    # cutoff（更克制）
     geom_hline(
       yintercept = 30,
       linetype = "dashed",
       linewidth = 0.6,
       color = "#E45756"
     ) +
-
-    # cutoff标注（关键）
     annotate(
       "text",
       x = 1.5,
@@ -196,13 +184,10 @@ draw_rsd_violin <- function(violin_df) {
       label = "30%",
       size = 3
     ) +
-
-    # 配色（顶刊常用）
     scale_fill_manual(values = c(
       QC = "#4C78A8",
       Sample = "#E45756"
     )) +
-
     scale_x_discrete(labels = label_list) +
 
     coord_cartesian(ylim = c(0, max(violin_df$value, na.rm = TRUE))) +
@@ -226,48 +211,8 @@ draw_rsd_violin <- function(violin_df) {
     )
 }
 
-#draw_rsd_violin <- function(violin_df) {
-#
-#  has_qc <- any(violin_df$type == "QC")
-#  if (!has_qc) {
-#    message("No QC samples found, plotting only Sample")
-#  }
-#  n_qc <- sum(violin_df$type == "QC")
-#  n_sample <- sum(violin_df$type == "Sample")
-#
-#  label_list <- c(
-#    QC = paste0("QC (n = ", n_qc, ")"),
-#    Sample = paste0("Sample (n = ", n_sample, ")")
-#  )
-#
-#  rsd_violin_p <- ggplot(violin_df, aes(x = type, y = value, fill = type)) +
-#    geom_violin(trim = FALSE, alpha = 0.8) +
-#    geom_boxplot(width = 0.12, outlier.size = 0.6,
-#                 fill = "white", color = "black") +
-#    geom_hline(yintercept = 30, linetype = "dashed", color = "red") +
-#    labs(x = "", y = "RSD (%)") +
-#    scale_x_discrete(labels = label_list) +
-#    theme_bw() +
-#    theme(legend.position = "none")
-#
-#  return(rsd_violin_p)
-#}
-
-#draw_intentity <- function(df_plot) {
-#  p <-
-#    ggplot(df_plot, aes(x = sample, y = log10(intensity), fill = group)) +
-#    geom_boxplot() +
-#    scale_fill_manual(values = RColorBrewer::brewer.pal(length(unique(df_plot$group)), "Set1")) +
-#    labs(x = "", y = "Intensity") +
-#    theme_bw()
-#  return(p)
-#}
-
 draw_intentity <- function(df_plot) {
-
   ggplot(df_plot, aes(x = sample, y = intensity)) +
-
-    # 箱线图（细一点）
     geom_boxplot(
       aes(fill = group),
       width = 0.6,
@@ -329,6 +274,7 @@ draw_corr <- function(quant, sample_info) {
 }
 
 draw_pca <- function(quant, sample_info, label = FALSE) {
+  quant[is.na(quant)] <- 0
   intensity_scaled_df <- scale(log2(quant + 1), center = TRUE, scale = TRUE)
   quant_t <- t(intensity_scaled_df)
   res_pca <- FactoMineR::PCA(quant_t, graph = FALSE)
