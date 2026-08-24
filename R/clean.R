@@ -136,7 +136,7 @@ detect_mv <- function(df, metadata) {
   .check_feature_table(df)
 
   df_mv <- data.frame(
-    sample = names(df),
+    sample = colnames(df),
     mv_rate = colSums(is.na(df)) / nrow(df) * 100
   )
   if (sum(is.na(df_mv)) == 0) {

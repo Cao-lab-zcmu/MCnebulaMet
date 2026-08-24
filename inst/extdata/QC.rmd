@@ -51,12 +51,16 @@ kableExtra::kable(
 
 # Missing value
 
-```{r}
+Missing values were assessed to evaluate data completeness across detected features and samples. The distribution of missing observations provides an overview of data quality and helps identify features or samples with insufficient quantitative information that may require subsequent filtering or imputation.
+
+```{r MV}
 df_mv <- detect_mv(quant, sample_info)
 draw_mv(df_mv)
 ```
 
 # RSD
+
+Relative standard deviation (RSD) was used to evaluate the analytical reproducibility of the dataset, particularly across quality control (QC) samples. Lower RSD values indicate greater measurement stability and analytical precision. The distribution and cumulative proportion of RSD values were examined to assess the overall robustness of feature quantification.
 
 ```{r RSD}
 if(params$has_qc){
@@ -71,7 +75,10 @@ if(params$has_qc){
 }
 ```
 
-# intensity
+
+# Intensity distribution
+
+The distribution of feature intensities across samples was examined to evaluate overall signal characteristics and identify potential systematic differences in signal abundance. Comparable intensity distributions among samples generally indicate consistent analytical performance, whereas pronounced deviations may suggest technical variation or other potential sources of bias.
 
 ```{r intensity}
 intensity_df_longer <- tidyr::pivot_longer(
@@ -82,13 +89,17 @@ intensity_box_df <- dplyr::left_join(intensity_df_longer, sample_info, by = "sam
 draw_intentity(intensity_box_df)
 ```
 
-# correlation
+# Sample correlation
+
+Pairwise sample correlations were evaluated to assess the consistency of the global metabolomic profiles. High correlations among biological replicates indicate good reproducibility, whereas reduced correlations may reflect biological heterogeneity, technical variation, or potential outlier samples.
 
 ```{r correlation}
 draw_corr(quant, sample_info)
 ```
 
 # PCA
+
+Principal component analysis (PCA) was performed as an unsupervised multivariate approach to summarize the major sources of variation in the metabolomic dataset. Sample clustering and separation were examined to evaluate data structure, within-group reproducibility, and potential outliers without imposing predefined group differences.
 
 ```{r PCA}
 draw_pca(quant, sample_info, label = TRUE)
