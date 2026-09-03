@@ -126,6 +126,169 @@ read_mgf <- function(
   )
 }
 
+read_msp2 <- function(
+  file,
+  id_prefix = "MSP",
+  calc_rel_int = TRUE,
+  progress = interactive()
+) {
+
+  lines <- readLines(file, warn = FALSE)
+  lines <- lines[nzchar(lines)]
+
+  rec_starts <- grep("^(NAME|Name):", lines)
+  rec_starts <- c(rec_starts, length(lines) + 1)
+
+  n <- length(rec_starts) - 1
+
+  spectra_list <- vector("list", n)
+  peaks_list   <- vector("list", n)
+
+  if (progress) {
+    pb <- txtProgressBar(min = 0, max = n, style = 3)
+    on.exit(close(pb), add = TRUE)
+  }
+
+  for (i in seq_len(n)) {
+
+    if (progress) setTxtProgressBar(pb, i)
+
+    block <- lines[rec_starts[i]:(rec_starts[i + 1] - 1)]
+    id <- sprintf("%s_%05d", id_prefix, i)
+
+    ## ---- fields ----
+    kv_lines <- block[
+      grepl(":", block) &
+        !grepl("^\\d", block)
+    ]
+
+    kv <- data.table::tstrsplit(
+      kv_lines,
+      ":",
+      fixed = TRUE,
+      keep = 1:2
+    )
+
+    fields <- setNames(
+      trimws(kv[[2]]),
+      toupper(kv[[1]])
+    )
+
+    ## ---- parse comments ----
+    comments <- fields["COMMENTS"]
+    smiles   <- fields["SMILES"]
+
+    if (is.na(smiles) && !is.na(comments)) {
+
+      m <- regmatches(
+        comments,
+        regexpr('SMILES=[^"]+', comments)
+      )
+
+      if (length(m)) {
+        smiles <- sub("SMILES=", "", m)
+      }
+    }
+
+    cas <- NA
+
+    if (!is.na(comments)) {
+
+      m <- regmatches(
+        comments,
+        regexpr('cas number=[^"]+', comments)
+      )
+
+      if (length(m)) {
+        cas <- sub("cas number=", "", m)
+      }
+    }
+
+    ## ---- ion mode normalize ----
+    ionmode <- fields["IONMODE"]
+
+    if (is.na(ionmode)) {
+      ionmode <- fields["ION_MODE"]
+    }
+
+    if (!is.na(ionmode)) {
+
+      ionmode <- ifelse(
+        toupper(substr(ionmode, 1, 1)) == "P",
+        "Positive",
+        "Negative"
+      )
+    }
+
+    ## ---- precursor mz ----
+    precursor <- fields["PRECURSORMZ"]
+
+    if (is.na(precursor)) {
+      precursor <- fields["EXACTMASS"]
+    }
+
+    ## ---- spectrum metadata ----
+    spectra_list[[i]] <- data.table::data.table(
+      id           = id,
+      name         = fields["NAME"],
+      precursor_mz = as.numeric(precursor),
+      adduct       = fields["PRECURSORTYPE"],
+      formula      = fields["FORMULA"],
+      inchikey     = fields["INCHIKEY"],
+      smiles       = smiles,
+      cas          = cas,
+      ionmode      = ionmode,
+      instrument   = fields["INSTRUMENT"]
+    )
+
+    ## ---- peaks ----
+    p_start <- grep("^Num Peaks:", block)
+
+    if (length(p_start) == 1) {
+
+      p_txt <- block[
+        (p_start + 1):length(block)
+      ]
+
+      p_txt <- p_txt[
+        grepl("^\\d", p_txt)
+      ]
+
+      if (length(p_txt)) {
+
+        dt <- data.table::fread(
+          text = paste(p_txt, collapse = "\n"),
+          col.names = c("mz", "intensity"),
+          showProgress = FALSE
+        )
+
+        # Avoid := because this function may be called
+        # from a non-data.table-aware environment
+        dt$id <- id
+
+        if (calc_rel_int) {
+          dt$rel_intensity <-
+            100 * dt$intensity / max(dt$intensity)
+        }
+
+        peaks_list[[i]] <- dt
+      }
+    }
+  }
+
+  list(
+    spectra = data.table::rbindlist(
+      spectra_list,
+      fill = TRUE
+    ),
+
+    peaks = data.table::rbindlist(
+      peaks_list,
+      fill = TRUE
+    )
+  )
+}
+
 read_msp <- function(
   file,
   id_prefix = "MSP",

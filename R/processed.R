@@ -366,15 +366,11 @@ match_level <- function(df, ref) {
 }
 
 get_mirror_data_lib <- function(i){
-
   row <- anno_sub[i,]
-
   feature_full <- row$ID
   lib_id <- row$`Library ID`
-
   feature_id <- sub("_.*","",feature_full)
   ionmode <- sub(".*_","",feature_full)
-
   # sample spectrum
   if(ionmode=="Positive"){
     spec_sample <- sample_pos$peaks |>
@@ -383,11 +379,8 @@ get_mirror_data_lib <- function(i){
     spec_sample <- sample_neg$peaks |>
       dplyr::filter(.features_id==feature_id)
   }
-
-  # library spectrum
   spec_lib <- gnps_lib$peaks |>
     dplyr::filter(id==lib_id)
-
   list(
     sample = spec_sample,
     library = spec_lib,
@@ -429,25 +422,17 @@ plot_mirror_lib <- function(i){
 }
 
 get_mirror_data_std <- function(i, anno, sample, lib){
-
   meta <- anno |>
     dplyr::filter(ID == i) |>
     dplyr::slice_max(cosine)
-
   if(nrow(meta) == 0) return(NULL)
-
   lib_id <- meta$id
-
   if(length(lib_id) == 0) return(NULL)
-
   spec_lib <- lib$peaks |>
     dplyr::filter(id %in% lib_id)
-
   feat <- sub("_.*","", meta$ID)
-
   spec_sample <- sample$peaks |>
     dplyr::filter(.features_id %in% feat)
-
   list(
     sample = spec_sample,
     library = spec_lib,
@@ -455,44 +440,7 @@ get_mirror_data_std <- function(i, anno, sample, lib){
   )
 }
 
-#plot_mirror_std <- function(i, anno, sample, lib){
-#
-#  dat <- get_mirror_data_std(i, anno, sample, lib)
-#
-#  if(is.null(dat)) return(NULL)
-#
-#  spec_sample <- dat$sample
-#  spec_lib <- dat$library
-#  meta <- dat$meta
-#
-#  ggplot2::ggplot() +
-#
-#    ggplot2::geom_segment(
-#      data = spec_sample,
-#      ggplot2::aes(x=mz,xend=mz,y=0,yend=rel.int.),
-#      linewidth=0.3,
-#      colour="#1f78b4"
-#    ) +
-#
-#    ggplot2::geom_segment(
-#      data = spec_lib,
-#      ggplot2::aes(x=mz,xend=mz,y=0,yend=-rel_intensity),
-#      linewidth=0.3,
-#      colour="#e31a1c"
-#    ) +
-#
-#    ggplot2::theme_classic(base_size = 11) +
-#
-#    ggplot2::labs(
-#      title = meta$synonym,
-#      subtitle = paste0(meta$ID," Cosine=",round(meta$cosine,3)),
-#      x = "m/z",
-#      y = "Intensity"
-#    )
-#}
-
 plot_mirror_std <- function(i, anno, sample, lib){
-
   dat <- get_mirror_data_std(i, anno, sample, lib)
   if(is.null(dat)) return(NULL)
   spec_sample <- dat$sample
