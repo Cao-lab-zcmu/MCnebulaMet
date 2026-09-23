@@ -51,24 +51,36 @@ run_univariate <- function(mat, group, method = c("t.test", "wilcox.test"),
 #'
 #' @return ggplot object
 #' @export
-plot_volcano <- function(df,
-                         logfc_col = "logFC",
-                         p_col = "adj.P.Val",
-                         fc_cutoff = 1.5,
-                         p_cutoff = 0.05,
-                         title = "Volcano Plot",
-                         subtitle = NULL) {
+
+plot_volcano <- function(
+    df,
+    logfc_col = "logFC",
+    p_col = "adj.P.Val",
+    fc_cutoff = 1.5,
+    p_cutoff = 0.05,
+    title = "",
+    subtitle = NULL
+) {
+
+  # Check
   df_plot <- df |>
     dplyr::mutate(
       .features_id = as.character(.features_id),
       neg_log10_q = -log10(.data[[p_col]]),
       sig = dplyr::case_when(
-        .data[[p_col]] < p_cutoff & .data[[logfc_col]] >= fc_cutoff ~ "Up",
-        .data[[p_col]] < p_cutoff & .data[[logfc_col]] <= -fc_cutoff ~ "Down",
+        .data[[p_col]] < p_cutoff &
+          .data[[logfc_col]] >= fc_cutoff ~ "Up",
+        .data[[p_col]] < p_cutoff &
+          .data[[logfc_col]] <= -fc_cutoff ~ "Down",
         TRUE ~ "NS"
       )
     )
 
+  # Prepare
+  df_label <- df_plot |>
+    dplyr::filter(sig != "NS")
+
+  # Plot
   p <- ggplot2::ggplot(
     df_plot,
     ggplot2::aes(
@@ -80,6 +92,17 @@ plot_volcano <- function(df,
       ggplot2::aes(color = sig),
       size = 1.8,
       alpha = 0.85
+    ) +
+    ggrepel::geom_text_repel(
+      data = df_label,
+      ggplot2::aes(label = .features_id),
+      size = 3.2,
+      max.overlaps = Inf,
+      box.padding = 0.5,
+      point.padding = 0.25,
+      min.segment.length = 0,
+      segment.linewidth = 0.3,
+      seed = 1
     ) +
     ggplot2::scale_color_manual(
       values = c(
@@ -140,6 +163,7 @@ plot_volcano <- function(df,
       legend.position = "none",
       plot.margin = ggplot2::margin(12, 16, 12, 12)
     )
+
   return(p)
 }
 

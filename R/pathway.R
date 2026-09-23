@@ -3,39 +3,26 @@ plot_pathway_network <- function(
     nodes_info,
     layout = c("kk", "stress"),
     label = c("name", "synonym"),
+    logFC_cutoff = 0.5,
+    VIP_cutoff = 1,
+    q_cutoff = 0.05,
     seed = 1
 ) {
   
   layout <- match.arg(layout)
   label  <- match.arg(label)
   
-  # ─────────────────────────────
-  # Check data structure
-  # ─────────────────────────────
-  
-  required_edge_cols <- c(
-    "source",
-    "target",
-    "value",
-    "type"
-  )
-  
+  # Check
+  required_edge_cols <- c("source", "target", "value", "type")
   required_node_cols <- c(
-    ".features_id",
-    "synonym",
-    "logFC",
-    "adj.P.Val",
-    "VIP"
+    ".features_id", "synonym", "logFC", "adj.P.Val", "VIP"
   )
   
   missing_edge_cols <- setdiff(
-    required_edge_cols,
-    colnames(cytos_plot_data)
+    required_edge_cols, colnames(cytos_plot_data)
   )
-  
   missing_node_cols <- setdiff(
-    required_node_cols,
-    colnames(nodes_info)
+    required_node_cols, colnames(nodes_info)
   )
   
   if (length(missing_edge_cols) > 0) {
@@ -52,27 +39,12 @@ plot_pathway_network <- function(
     )
   }
   
-  
-  # ─────────────────────────────
-  # Check label column
-  # ─────────────────────────────
-  
-  if (label == "name") {
-    label_col <- "name"
-  } else {
-    label_col <- "synonym"
-  }
-  
-  if (label_col == "synonym" &&
+  if (label == "synonym" &&
       !"synonym" %in% colnames(nodes_info)) {
     stop("nodes_info 中不存在 synonym 列。")
   }
   
-  
-  # ─────────────────────────────
-  # Build graph
-  # ─────────────────────────────
-  
+  # Prepare
   g_tbl <- tidygraph::as_tbl_graph(
     cytos_plot_data,
     directed = FALSE
@@ -85,22 +57,16 @@ plot_pathway_network <- function(
       by = c("name" = ".features_id")
     ) |>
     dplyr::mutate(
-      node_fill = factor(
-        dplyr::case_when(
-          logFC > 0.5  & adj.P.Val < 0.05 ~ "up",
-          logFC < -0.5 & adj.P.Val < 0.05 ~ "down",
-          VIP > 1      & adj.P.Val < 0.05 ~ "vip_high",
-          TRUE                          ~ "no significance"
-        )
+      node_fill = dplyr::case_when(
+        logFC > logFC_cutoff & adj.P.Val < q_cutoff ~ "up",
+        logFC < -logFC_cutoff & adj.P.Val < q_cutoff ~ "down",
+        VIP > VIP_cutoff ~ "vip_high",
+        TRUE ~ "no significance"
       ),
-      node_label = .data[[label_col]]
+      node_label = .data[[label]]
     )
   
-  
-  # ─────────────────────────────
   # Layout
-  # ─────────────────────────────
-  
   set.seed(seed)
   
   layout_data <- ggraph::create_layout(
@@ -108,14 +74,9 @@ plot_pathway_network <- function(
     layout = layout
   )
   
-  
-  # ─────────────────────────────
   # Plot
-  # ─────────────────────────────
-  
   p <- ggraph::ggraph(layout_data) +
     
-    # Edges
     ggraph::geom_edge_link(
       ggplot2::aes(
         color = type,
@@ -128,7 +89,6 @@ plot_pathway_network <- function(
       range = c(0.3, 1.5)
     ) +
     
-    # Nodes
     ggraph::geom_node_point(
       ggplot2::aes(
         fill = node_fill,
@@ -146,7 +106,6 @@ plot_pathway_network <- function(
       name = "VIP"
     ) +
     
-    # Labels
     ggraph::geom_node_text(
       ggplot2::aes(
         label = node_label
@@ -159,7 +118,6 @@ plot_pathway_network <- function(
       max.overlaps = Inf
     ) +
     
-    # Node colors
     ggplot2::scale_fill_manual(
       values = c(
         "up" = "#D73027",
@@ -170,7 +128,6 @@ plot_pathway_network <- function(
       name = "Metabolite status"
     ) +
     
-    # Edge colors
     ggraph::scale_edge_color_manual(
       values = c(
         "spectral"  = "#8EC6D9",
@@ -187,13 +144,9 @@ plot_pathway_network <- function(
         size = 10,
         face = "bold"
       ),
-      legend.text = ggplot2::element_text(
-        size = 9
-      ),
+      legend.text = ggplot2::element_text(size = 9),
       legend.key = ggplot2::element_blank(),
-      plot.margin = ggplot2::margin(
-        15, 15, 15, 15
-      )
+      plot.margin = ggplot2::margin(15, 15, 15, 15)
     )
   
   return(p)
