@@ -178,36 +178,85 @@ plot_volcano <- function(
 #'
 #' @return pheatmap object
 #' @export
-plot_heatmap <- function(mat,
-                         scale_rows = TRUE,
-                         cluster_rows = TRUE,
-                         cluster_cols = TRUE,
-                         show_rownames = FALSE,
-                         show_colnames = FALSE) {
-
+draw_heatmap <- function(
+    res,
+    quant,
+    sample_info,
+    top_n = 50,
+    fc_cutoff = 1.5,
+    p_cutoff = 0.05,
+    scale_rows = TRUE,
+    cluster_rows = TRUE,
+    cluster_cols = TRUE
+) {
+  
+  # Check
+  stopifnot(
+    all(res$.features_id %in% rownames(quant)),
+    all(sample_info$sample %in% colnames(quant))
+  )
+  
+  # Prepare
+  selected <- res |>
+    dplyr::filter(
+      abs(logFC) >= fc_cutoff,
+      adj.P.Val < p_cutoff
+    ) |>
+    dplyr::arrange(adj.P.Val) |>
+    dplyr::slice_head(n = top_n)
+  
+  sample_order <- sample_info$sample[
+    order(sample_info$group)
+  ]
+  
+  mat <- quant[
+    selected$.features_id,
+    sample_order,
+    drop = FALSE
+  ]
+  
   if (scale_rows) {
     mat <- t(scale(t(mat)))
   }
+  
+  annotation_col <- data.frame(
+    Group = sample_info$group[
+      match(sample_order, sample_info$sample)
+    ]
+  )
+  
+  rownames(annotation_col) <- sample_order
 
-  heat_colors <- colorRampPalette(c(
-    "#4C6A92",
-    "#F5F5F5",
-    "#C77C6B"
+  heat_colors <- grDevices::colorRampPalette(c(
+    "#354A5F",
+    "#7890A3",
+    "#F2F0EA",
+    "#D9A18F",
+    "#A84A43"
+
   ))(100)
-
+  # Plot
   pheatmap::pheatmap(
     mat,
     color = heat_colors,
     border_color = NA,
+    annotation_col = annotation_col,
     cluster_rows = cluster_rows,
     cluster_cols = cluster_cols,
-    show_rownames = show_rownames,
-    show_colnames = show_colnames,
-    fontsize = 10,
-    fontsize_row = 8,
-    fontsize_col = 9,
-    treeheight_row = 40,
-    treeheight_col = 40,
-    angle_col = 45
+    show_rownames = TRUE,
+    show_colnames = TRUE,
+    fontsize = 9,
+    fontsize_row = 7,
+    fontsize_col = 8,
+    treeheight_row = 45,
+    treeheight_col = 45,
+    angle_col = 45,
+    clustering_distance_rows = "euclidean",
+    clustering_distance_cols = "euclidean",
+    clustering_method = "complete",
+    annotation_names_col = FALSE,
+    gaps_col = cumsum(
+      table(annotation_col$Group)
+    )[-length(unique(annotation_col$Group))]
   )
 }

@@ -389,13 +389,10 @@ get_mirror_data_lib <- function(i){
 }
 
 plot_mirror_lib <- function(i){
-
   dat <- get_mirror_data_lib(i)
-
   spec_sample <- dat$sample
   spec_lib <- dat$library
   meta <- dat$meta
-
   ggplot() +
     geom_segment(
       data = spec_sample,
