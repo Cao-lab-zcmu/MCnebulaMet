@@ -544,15 +544,11 @@ reformat_mgf_custom <- function(infile, outfile, force_charge = NULL) {
   
   for (k in seq_along(begin_idx)) {
     block <- lines[begin_idx[k]:end_idx[k]]
-    
-    # 提取信息
     feature <- sub("^FEATURE_ID=", "", grep("^FEATURE_ID=", block, value = TRUE))
     pepmass <- grep("^PEPMASS=", block, value = TRUE)
     charge  <- grep("^CHARGE=", block, value = TRUE)
     charge_val <- if (length(charge) > 0) sub("^CHARGE=", "", charge) else ""
     rt <- grep("^RTINSECONDS", block, value = TRUE)
-    
-    # 根据 force_charge 参数处理
     if (!is.null(force_charge)) {
       if (force_charge == "positive") {
         charge_fmt <- "1+"
@@ -562,20 +558,14 @@ reformat_mgf_custom <- function(infile, outfile, force_charge = NULL) {
         stop("force_charge must be 'positive', 'negative', or NULL")
       }
     } else {
-      # 保留原始值
       charge_fmt <- charge_val
       if (charge_fmt == "" || charge_fmt == "0") charge_fmt <- "1+"
     }
-    
-    # MSLEVEL 从 TITLE 提取
     title_line <- grep("^TITLE=", block, value = TRUE)
     mslevel <- if (length(title_line) > 0) sub(".*msLevel ([0-9]+).*", "\\1", title_line) else "NA"
-    
-    # 提取谱峰数据（非键值行）
     peaks <- block[!grepl("=", block) & !grepl("^BEGIN|^END", block)]
     scans <- grep("^SCANS", block, value = TRUE)
     
-    # 拼接输出
     new_lines[[k]] <- c(
       "BEGIN IONS",
       paste0("FEATURE_ID=", feature),

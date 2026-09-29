@@ -305,3 +305,65 @@ draw_pca <- function(quant, sample_info, label = FALSE) {
   }
   p
 }
+
+draw_plsda <- function(quant, sample_info, label = FALSE) {
+  quant[is.na(quant)] <- 0
+  scaled_df <- scale_data(log2(quant), "pareto")
+  X <- t(scaled_df)
+  Y <- factor(sample_info$group, levels = unique(sample_info$group))
+  res_plsda <- mixOmics::plsda(X, Y, ncomp = 2)
+  plsda_df <- as.data.frame(res_plsda$variates$X[, 1:2])
+  colnames(plsda_df) <- c("Comp.1", "Comp.2")
+  plsda_df$group <- Y
+  plsda_df$sample <- rownames(plsda_df)
+  var_explained <- 100 * res_plsda$prop_expl_var$X[1:2]
+  p <- ggplot2::ggplot(plsda_df, ggplot2::aes(Comp.1, Comp.2)) +
+    ggplot2::stat_ellipse(
+      ggplot2::aes(color = group),
+      level = 0.7,
+      linewidth = 0.6,
+      alpha = 0.6
+    ) +
+    ggplot2::geom_point(
+      ggplot2::aes(color = group),
+      size = 2.6,
+      alpha = 0.9
+    ) +
+    ggplot2::geom_hline(
+      yintercept = 0,
+      linewidth = 0.4,
+      colour = "black"
+    ) +
+    ggplot2::geom_vline(
+      xintercept = 0,
+      linewidth = 0.4,
+      colour = "black"
+    ) +
+    ggplot2::coord_equal() +
+    ggplot2::labs(
+      x = paste0("PLS-DA1 (", round(var_explained[1], 1), "%)"),
+      y = paste0("PLS-DA2 (", round(var_explained[2], 1), "%)"),
+      color = NULL
+    ) +
+    ggplot2::scale_color_manual(
+      values = c("#4C78A8", "#E45756", "#54A24B")
+    ) +
+    ggplot2::theme_classic(base_size = 12) +
+    ggplot2::theme(
+      axis.title = ggplot2::element_text(size = 11),
+      axis.text = ggplot2::element_text(size = 9),
+      legend.position = "right",
+      legend.text = ggplot2::element_text(size = 10),
+      panel.grid = ggplot2::element_blank(),
+      plot.margin = ggplot2::margin(8, 12, 8, 8)
+    )
+  if (label) {
+    p <- p +
+      ggrepel::geom_text_repel(
+        ggplot2::aes(label = sample),
+        size = 3,
+        max.overlaps = Inf
+      )
+  }
+  p
+}
