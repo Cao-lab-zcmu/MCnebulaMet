@@ -109,11 +109,8 @@ plot_mirror <- function(
       plot.margin = ggplot2::margin(10, 10, 10, 10)
     )
 }
-
 plot_intensity_std <- function(i, stat, origin, sample_info) {
-
   feature_id <- stat$.features_id[i]
-
   dat <- origin |>
     dplyr::filter(.features_id == feature_id) |>
     tidyr::pivot_longer(
@@ -126,16 +123,30 @@ plot_intensity_std <- function(i, stat, origin, sample_info) {
       by = "sample"
     ) |>
     dplyr::filter(!is.na(group))
-
   if (nrow(dat) == 0) return(NULL)
-
-  dat$group <- factor(
-    dat$group,
-    levels = c("Sham", "Model")
-  )
-
+  dat$group <- factor(dat$group, levels = unique(dat$group))
   meta <- stat[i, ]
-
+  group_levels <- levels(dat$group)
+  if (length(group_levels) == 2) {
+    group_colors <- c(
+      "#1B4F72",
+      "#7B241C"
+    )
+    names(group_colors) <- group_levels
+  } else {
+    group_colors <- c(
+      "#1B4F72",
+      "#7B241C",
+      "#2E7D32",
+      "#7B1FA2",
+      "#EF6C00",
+      "#00838F"
+    )
+    group_colors <- group_colors[
+      seq_along(group_levels)
+    ]
+    names(group_colors) <- group_levels
+  }
   p <- ggplot2::ggplot(
     dat,
     ggplot2::aes(
@@ -144,8 +155,6 @@ plot_intensity_std <- function(i, stat, origin, sample_info) {
       fill = group
     )
   ) +
-
-    ## Boxplot
     ggplot2::geom_boxplot(
       width = 0.55,
       linewidth = 0.9,
@@ -153,9 +162,7 @@ plot_intensity_std <- function(i, stat, origin, sample_info) {
       alpha = 0.55,
       colour = "black"
     ) +
-
     ggplot2::geom_jitter(
-      ggplot2::aes(fill = group),
       width = 0.10,
       height = 0,
       shape = 21,
@@ -164,16 +171,9 @@ plot_intensity_std <- function(i, stat, origin, sample_info) {
       colour = "black",
       alpha = 0.95
     ) +
-
-    ## 配色与 mirror spectrum 一致
     ggplot2::scale_fill_manual(
-      values = c(
-        "Sham"  = "#1B4F72",
-        "Model" = "#7B241C"
-      )
+      values = group_colors
     ) +
-
-    ## Y axis
     ggplot2::scale_y_continuous(
       labels = scales::label_scientific(
         digits = 2
@@ -182,8 +182,6 @@ plot_intensity_std <- function(i, stat, origin, sample_info) {
         mult = c(0.05, 0.15)
       )
     ) +
-
-    ## Labels
     ggplot2::labs(
       title = paste0(
         "Feature ",
@@ -204,59 +202,46 @@ plot_intensity_std <- function(i, stat, origin, sample_info) {
       x = NULL,
       y = "Intensity"
     ) +
-
-    ## Publication style
     ggplot2::theme_classic(
       base_size = 18
     ) +
-
     ggplot2::theme(
-
       axis.title.y = ggplot2::element_text(
         size = 16,
         face = "bold",
         margin = ggplot2::margin(r = 10)
       ),
-
       axis.text.x = ggplot2::element_text(
         size = 16,
         face = "bold",
         colour = "black"
       ),
-
       axis.text.y = ggplot2::element_text(
         size = 14,
         colour = "black"
       ),
-
       axis.line = ggplot2::element_line(
         linewidth = 0.8,
         colour = "black"
       ),
-
       axis.ticks = ggplot2::element_line(
         linewidth = 0.8,
         colour = "black"
       ),
-
       plot.title = ggplot2::element_text(
         size = 18,
         face = "bold",
         colour = "black"
       ),
-
       plot.subtitle = ggplot2::element_text(
         size = 12.5,
         colour = "#4D4D4D",
         margin = ggplot2::margin(b = 10)
       ),
-
       legend.position = "none",
-
       plot.margin = ggplot2::margin(
         10, 15, 10, 10
       )
     )
-
   return(p)
 }
