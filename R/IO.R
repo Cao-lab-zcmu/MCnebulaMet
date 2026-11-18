@@ -937,3 +937,117 @@ export_annotation_table <- function(
         overwrite = TRUE
     )
 }
+
+format_sirius_mgf <- function(input, output, charge = c("1+", "1-")) {
+    charge <- match.arg(charge)
+
+    lines <- readLines(input, warn = FALSE)
+
+    starts <- which(trimws(lines) == "BEGIN IONS")
+    ends <- which(trimws(lines) == "END IONS")
+
+    if (length(starts) == 0 || length(starts) != length(ends)) {
+        stop("Invalid MGF file: unmatched BEGIN IONS / END IONS.")
+    }
+
+    if (any(starts >= ends)) {
+        stop("Invalid MGF file: malformed ion blocks.")
+    }
+
+    blocks <- Map(
+        function(s, e) lines[s:e],
+        starts,
+        ends
+    )
+
+    required <- c(
+        "FEATURE_ID",
+        "PEPMASS",
+        "CHARGE",
+        "MSLEVEL"
+    )
+
+    formatted <- lapply(seq_along(blocks), function(i) {
+        block <- blocks[[i]]
+        block_trimmed <- trimws(block)
+
+        fields <- lapply(required, function(field) {
+            grep(
+                paste0("^", field, "="),
+                block_trimmed,
+                value = TRUE
+            )
+        })
+
+        names(fields) <- required
+
+        missing <- required[lengths(fields) == 0]
+        duplicated <- required[lengths(fields) > 1]
+
+        if (length(missing) > 0) {
+            stop(sprintf(
+                "Block %d is missing required fields: %s",
+                i,
+                paste(missing, collapse = ", ")
+            ))
+        }
+
+        if (length(duplicated) > 0) {
+            stop(sprintf(
+                "Block %d contains duplicated fields: %s",
+                i,
+                paste(duplicated, collapse = ", ")
+            ))
+        }
+
+        mslevel <- sub("^MSLEVEL=", "", fields$MSLEVEL)
+
+        if (!mslevel %in% c("1", "2")) {
+            stop(sprintf(
+                "Block %d has unsupported MSLEVEL: %s",
+                i,
+                mslevel
+            ))
+        }
+
+        peaks <- block[
+            grepl(
+                "^\\s*[0-9.eE+-]+\\s+[0-9.eE+-]+\\s*$",
+                block
+            )
+        ]
+
+        c(
+            "BEGIN IONS",
+            fields$FEATURE_ID,
+            fields$PEPMASS,
+            paste0("CHARGE=", charge),
+            paste0("MSLEVEL=", mslevel),
+            peaks,
+            "END IONS"
+        )
+    })
+
+    mslevel <- vapply(formatted, function(x) {
+        sub("^MSLEVEL=", "", x[5])
+    }, character(1))
+
+    output_lines <- unlist(
+        lapply(formatted, function(x) c(x, "")),
+        use.names = FALSE
+    )
+
+    writeLines(output_lines, output)
+
+    cat(
+        "MGF conversion completed\n",
+        "========================\n",
+        "Total spectra: ", length(blocks), "\n",
+        "MS1 spectra:   ", sum(mslevel == "1"), "\n",
+        "MS2 spectra:   ", sum(mslevel == "2"), "\n",
+        "Output:        ", output, "\n",
+        sep = ""
+    )
+
+    invisible(output)
+}
